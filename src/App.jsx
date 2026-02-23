@@ -9,24 +9,35 @@ const App = () => {
 
   const [movies, setMovies] = useState([]);          // State to hold the list of movies fetched from the API
   const [searchTerm, setSearchTerm] = useState('');  // State to hold the current search term entered by the user
+  const [loading, setLoading] = useState(false);     // State to indicate whether the app is currently loading data from the API
 
-  const searchMovies = async (title) => {                   // Function to fetch movies based on the search term
-    const response = await fetch(`${API_URL}&s=${title}`);  // Make a GET request to the API with the search term
-    const data = await response.json();                     // Parse the response as JSON
+  const searchMovies = async (title) => {  // Function to fetch movies based on the search term
 
-    console.log("API_DATA", data);  // Log the API response data to the console for debugging purposes
+    setLoading(true);  // Set loading state to true while fetching data
 
-    if (data.Response === "True") {     // If the API response indicates success, process the movie data
-      // Defensively clean API data - deduplicate before setting state
-      const uniqueMovies = Array.from(  // Create a new array of unique movies by using a Map to filter out duplicates based on the imdbID
-        new Map(data.Search.map(movie => [movie.imdbID, movie])).values()
-                                        // Map each movie to a key-value pair where the key is the imdbID and the value is the movie object,
-                                        // then convert the Map values back to an array
-      );
-      setMovies(uniqueMovies);
-    } else {
-      setMovies([]);
+    try {
+      const response = await fetch(`${API_URL}&s=${title}`);  // Make a GET request to the API with the search term
+      const data = await response.json();                     // Parse the response as JSON
+
+      // console.log("API_DATA", data);
+
+      if (data.Response === "True") {  // If the API response indicates success, process the movie data
+        // Defensively clean API data - deduplicate before setting state
+        const uniqueMovies = Array.from(  // Create a new array of unique movies by using a Map to filter out duplicates based on the imdbID
+          new Map(data.Search.map(movie => [movie.imdbID, movie])).values()
+                                          // Map each movie to a key-value pair where the key is the imdbID and the value is the movie object,
+                                          // then convert the Map values back to an array
+        );
+        setMovies(uniqueMovies);
+      } else {
+        setMovies([]);
+      }
+    } catch (error) {
+      console.error("Error fetching movies:", error);  // Log any errors that occur during the fetch operation
+      setMovies([]);                                   // If an error occurs, set movies to an empty array
     }
+
+    setLoading(false);
 
   };
 
@@ -61,8 +72,9 @@ const App = () => {
 
       </div>
 
-      {movies?.length > 0 ? (  // If there are movies in the state,
-                               // display them using the MovieCard component
+      {loading ? (  // If the app is currently loading data, display a loading message
+        <h2>Loading...</h2>
+      ) : movies?.length > 0 ? (  // If there are movies in the state, display them using the MovieCard component
 
         <div className="container">
           {movies.map((movie) => (  // Map over the movies array and render a MovieCard for each movie
@@ -73,7 +85,7 @@ const App = () => {
           ))}
         </div>
       ) : (
-        <div className="empty">  // If there are no movies, display a message indicating that no movies were found
+        <div className="empty">
           <h2>No Movies Found!</h2>
         </div>
       )}
