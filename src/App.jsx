@@ -14,14 +14,18 @@ const App = () => {
   const [loading, setLoading] = useState(false);     // State to indicate whether the app is currently loading data from the API
   const [error, setError] = useState(null);          // State to hold any error messages that may occur during the fetch operation
 
-  const searchMovies = async (title) => {
+  const searchMovies = async (term) => {
+
+    if (term.trim() === "")  {  // If the search term is empty or only contains whitespace, then use the default search term
+      term = defaultSearchTerm;
+    }
 
     setLoading(true);  // Set loading state to true while fetching data
     setError(null);    // Clear any previous error messages before making a new API request
     setMovies([]);     // Clear the movies state before fetching new data, to avoid displaying old results while loading new ones
 
     try {
-      const response = await fetch(`${API_URL}&s=${title}`);  // Make a GET request to the API with the search term
+      const response = await fetch(`${API_URL}&s=${term}`);  // Make a GET request to the API with the search term
       if (!response.ok) {  // Check if the response status is not OK (status code outside the range 200-299)
         throw new Error(`HTTP error! status: ${response.status}`);
                            // If the response is not OK, throw an error with the status code
@@ -97,10 +101,33 @@ const App = () => {
       </div>
 
       {/* The Correct Render Order:
+          Error, Loading, Results, Empty:
+
           Show error first
           Then loading
           Then results
           Then empty state */}
+
+      {/* By showing the error message first, users are immediately informed
+          of any issues without being confused by a loading indicator or stale results
+
+          If there is no error, the loading state is shown next, indicating that
+          the app is fetching data
+
+          Once loading is complete, the movie results, if available, are displayed,
+          or, if no movies are found, an empty state message is shown */}
+
+      {/* Internet Off:
+            → catch block runs
+            → error shown
+
+          Search nonsense term:
+            → API returns Response: "False"
+            → setError("Movie not found!")
+            → error shown
+
+          Valid search:
+            → movies displayed}  */}
 
       {error && (
         <div className="error">
@@ -109,6 +136,12 @@ const App = () => {
       )}
 
       {loading && <h2>Loading...</h2>}
+
+      {/* Only show movies if there is no error and not loading
+
+          Ensures that:
+            - You never see results & loading at the same time
+            - You never see error & results together */}
 
       {!loading && !error && movies.length > 0 && (
         <div className="container">
